@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCALAR</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <h1>SCALAR</h1>
+      <p>SCALAR: Semantic Clustering and Labeling Based Toolkit for Classification of Crowd-Based Software Requirements</p>
+      <p>Upload your dataset and analyze the clusters with analysis</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Status Bar -->
+    <div class="status-bar" id="status-bar">
+      <div class="status-step active" id="status-upload">1. Upload Data</div>
+      <div class="status-step" id="status-parameters">2. Set Parameters</div>
+      <div class="status-step" id="status-analysis">3. Analysis Results</div>
+    </div>
+
+    <!-- File Upload Section -->
+    <div class="card" id="upload-card">
+      <h2>Upload Data</h2>
+      <form id="upload-form" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+          <label class="form-label" for="file">Choose a CSV file </label>
+          <input type="file" id="file" name="file" class="form-input" accept=".csv" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+      </form>
+      <div id="upload-message" class="message message-success" style="display: none;"></div>
+    </div>
+
+    <!-- Analysis Parameters Section -->
+    <div class="card" id="parameters-card" style="display: none;">
+      <h2>Analysis Parameters</h2>
+      <form id="parameters-form">
+        <div class="form-group">
+          <label class="form-label" for="embedding_type">Embedding Type</label>
+          <select id="embedding_type" name="embedding_type" class="form-select" required>
+            <option value="sentence-bert" title="Lightweight and efficient sentence embedding model based on BERT">Sentence BERT</option>
+            <option value="sentence-roberta" title="Sentence embedding model based on RoBERTa with improved performance">Sentence RoBERTa</option>
+          </select>
+          <small class="form-help">Select the model to convert text to embeddings. Sentence BERT is faster while Sentence RoBERTa may be more accurate.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="clustering_method">Clustering Method</label>
+          <select id="clustering_method" name="clustering_method" class="form-select" required>
+            <option value="kmeans" title="Fast and efficient clustering method that partitions data into k clusters">K-Means</option>
+            <!-- <option value="hac" title="Hierarchical Agglomerative Clustering - builds a hierarchy of clusters">Hierarchical</option> -->
+            <option value="gmm" title="Probabilistic model that assumes data is generated from a mixture of Gaussian distributions">Gaussian Mixture Model</option> 
+            <!-- <option value="birch" title="Balanced Iterative Reducing and Clustering using Hierarchies - efficient for large datasets">BIRCH</option> -->
+          </select>
+          <small class="form-help">K-Means is good for most cases. Try GMM for more specialized clustering approaches.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="num_clusters">Number of Clusters</label>
+          <input type="number" id="num_clusters" name="num_clusters" class="form-input" min="2" max="10" value="2" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="min_wiki_pages">Minimum Wikipedia Pages</label>
+          <input type="number" id="min_wiki_pages" name="min_wiki_pages" class="form-input" min="1" max="10" value="3" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <input type="checkbox" id="use_bertopic" name="use_bertopic" checked>
+            Use BERTopic Analysis
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Class Descriptions</label>
+          <div id="class-descriptions">
+            <div class="form-group class-label-group">
+              <input type="text" class="form-input class-name" placeholder="Enter class name" required>
+              <textarea class="form-input class-description" placeholder="Enter class description (used for Wikipedia extraction, optional)" rows="3"></textarea>
+              <input type="file" class="form-input class-file" accept=".csv,.json">
+              <small class="form-help">You may provide either a description (for Wikipedia extraction) or upload a CSV/JSON file as a domain-specific corpus for this label. If both are provided, the uploaded file will be used for labeling.</small>
+            </div>
+          </div>
+          <button type="button" class="btn" onclick="addClassDescription()">Add Class Description</button>
+        </div>
+
+        <div class="form-group">
+          <button type="button" class="btn" onclick="showUploadCard()">Back to Upload</button>
+          <button type="submit" class="btn btn-primary">Set Parameters & Run Analysis</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Analysis Status Card -->
+    <div class="card" id="status-card" style="display: none;">
+      <h2>Analysis in Progress</h2>
+      <div class="progress-container">
+        <div class="loading-spinner"></div>
+        <p>Your analysis is running in the background. This may take several minutes to complete.</p>
+        <p id="analysis-status-message"></p>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <button type="button" class="btn" onclick="checkResults()">Check if Results Are Ready</button>
+      </div>
+    </div>
+
+    <!-- Analysis Results Section -->
+    <div class="card results" id="results" style="display: none;">
+      <h2>Analysis Results</h2>
+      
+      <!-- Cluster Distribution -->
+      <div class="cluster-distribution">
+        <h3>Cluster Distribution</h3>
+        <table class="results-table" id="cluster-table">
+          <thead>
+            <tr>
+              <th>Class</th>
+              <th>Count</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Will be populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Cluster Visualization -->
+      <div class="visualization">
+        <h3>Document Clusters</h3>
+        <img id="cluster-viz" src="" alt="Cluster Visualization">
+      </div>
+
+      <!-- Similarity Matrix -->
+      <div class="visualization">
+        <h3>Cluster-Class Similarity Matrix</h3>
+        <img id="similarity-matrix" src="" alt="Similarity Matrix">
+      </div>
+
+      <!-- Cluster Sizes -->
+      <div class="visualization">
+        <h3>Cluster Size Distribution</h3>
+        <img id="cluster-sizes" src="" alt="Cluster Size Distribution">
+      </div>
+
+      <!-- BERTopic Results -->
+      <div id="bertopic-results" style="display: none;">
+        <h3>Topic Analysis</h3>
+        <div id="topic-summaries" class="topic-summaries"></div>
+      </div>
+
+      <!-- Download Results -->
+      <div class="form-group download-group">
+        <a href="{{ url_for('download_results') }}" class="btn btn-primary">Download SCALAR Results (CSV)</a>
+        <a href="{{ url_for('download_json') }}" class="btn btn-primary">Download SCALAR Results (JSON)</a>
+      </div>
+      
+      <div class="form-group">
+        <button type="button" class="btn" onclick="showParametersCard()">Back to Parameters</button>
+        <button type="button" class="btn" onclick="location.reload()">New Analysis</button>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loading" id="loading" style="display: none;">
+      <div class="loading-spinner"></div>
+      <p>Processing your request...</p>
+      <p id="loading-message">Please wait, this may take several minutes...</p>
+    </div>
+
+    <!-- Error Messages -->
+    <div class="message message-error" id="error-message" style="display: none;"></div>
+  </main>
+
+  <script>
+    // Global variable to store polling interval
+    let statusCheckInterval = null;
+    
+    // Show and hide cards
+    function showUploadCard() {
+      document.getElementById('upload-card').style.display = 'block';
+      document.getElementById('parameters-card').style.display = 'none';
+      document.getElementById('status-card').style.display = 'none';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('status-upload').classList.add('active');
+      document.getElementById('status-parameters').classList.remove('active');
+      document.getElementById('status-analysis').classList.remove('active');
+      
+      // Clear any error messages
+      document.getElementById('error-message').style.display = 'none';
+      
+      // Stop polling if it's running
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+      }
+    }
+    
+    function showParametersCard() {
+      document.getElementById('upload-card').style.display = 'none';
+      document.getElementById('parameters-card').style.display = 'block';
+      document.getElementById('status-card').style.display = 'none';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('status-upload').classList.add('active');
+      document.getElementById('status-parameters').classList.add('active');
+      document.getElementById('status-analysis').classList.remove('active');
+      
+      // Clear any error messages
+      document.getElementById('error-message').style.display = 'none';
+      
+      // Stop polling if it's running
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+      }
+      
+      // Ensure we have enough class description fields
+      updateClassDescriptionFields();
+    }
+
+    // Initialize or update class description fields based on num_clusters
+    function updateClassDescriptionFields() {
+      const numClusters = parseInt(document.getElementById('num_clusters').value);
+      const container = document.getElementById('class-descriptions');
+      const currentFields = container.querySelectorAll('.form-group');
+      
+      // Add fields if needed
+      if (currentFields.length < numClusters) {
+        for (let i = currentFields.length; i < numClusters; i++) {
+          addClassDescription();
+        }
+      } 
+      // Remove excess fields if needed
+      else if (currentFields.length > numClusters) {
+        for (let i = currentFields.length - 1; i >= numClusters; i--) {
+          container.removeChild(currentFields[i]);
+        }
+      }
+    }
+    
+    // Add event listener to num_clusters to update class descriptions
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('num_clusters').addEventListener('change', updateClassDescriptionFields);
+      
+      // Initialize class descriptions on page load
+      updateClassDescriptionFields();
+    });
+    
+    function showStatusCard() {
+      document.getElementById('upload-card').style.display = 'none';
+      document.getElementById('parameters-card').style.display = 'none';
+      document.getElementById('status-card').style.display = 'block';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('status-upload').classList.add('active');
+      document.getElementById('status-parameters').classList.add('active');
+      document.getElementById('status-analysis').classList.add('active');
+      
+      // Start polling for status updates
+      startStatusPolling();
+    }
+    
+    function showResultsCard() {
+      document.getElementById('upload-card').style.display = 'none';
+      document.getElementById('parameters-card').style.display = 'none';
+      document.getElementById('status-card').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('status-upload').classList.add('active');
+      document.getElementById('status-parameters').classList.add('active');
+      document.getElementById('status-analysis').classList.add('active');
+      
+      // Stop polling if it's running
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+      }
+    }
+    
+    // Animate progress bar
+    let progress = 0;
+    function animateProgressBar() {
+      const progressBar = document.getElementById('progress-bar');
+      progress = (progress + 1) % 100;
+      progressBar.style.width = progress + '%';
+    }
+    
+    // Start polling for analysis status
+    function startStatusPolling() {
+      // Set progress animation
+      setInterval(animateProgressBar, 100);
+      
+      // Check status immediately
+      checkAnalysisStatus();
+      
+      // Then every 5 seconds
+      statusCheckInterval = setInterval(checkAnalysisStatus, 5000);
+    }
+    
+    // Check the analysis status
+    async function checkAnalysisStatus() {
+      try {
+        const response = await fetch("{{ url_for('analysis_status') }}");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Update status message
+        document.getElementById('analysis-status-message').textContent = data.message || 'Analysis is running...';
+        
+        // If analysis is complete, get results
+        if (data.status === 'complete') {
+          clearInterval(statusCheckInterval);
+          statusCheckInterval = null;
+          checkResults();
+        } else if (data.status === 'error') {
+          clearInterval(statusCheckInterval);
+          statusCheckInterval = null;
+          document.getElementById('error-message').textContent = data.message || 'An error occurred during analysis.';
+          document.getElementById('error-message').style.display = 'block';
+          document.getElementById('status-card').style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error checking analysis status:', error);
+      }
+    }
+    
+    // Check if results are ready
+    async function checkResults() {
+      const errorMessage = document.getElementById('error-message');
+      const loading = document.getElementById('loading');
+      
+      loading.style.display = 'block';
+      document.getElementById('loading-message').textContent = 'Checking for results...';
+      errorMessage.style.display = 'none';
+      
+      try {
+        const response = await fetch("{{ url_for('results') }}");
+        
+        if (response.status === 202) {
+          // Analysis still in progress
+          const data = await response.json();
+          loading.style.display = 'none';
+          document.getElementById('analysis-status-message').textContent = data.message || 'Analysis is still running...';
+          return;
+        }
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const resultsData = await response.json();
+        
+        loading.style.display = 'none';
+        
+        if (resultsData.error) {
+          throw new Error(resultsData.error);
+        }
+        
+        // Display results
+        displayResults(resultsData.results);
+        
+        // Show results card
+        showResultsCard();
+      } catch (error) {
+        loading.style.display = 'none';
+        errorMessage.textContent = error.message || 'An error occurred retrieving results.';
+        errorMessage.style.display = 'block';
+      }
+    }
+    
+    // Display the results
+    function displayResults(results) {
+      // Update cluster distribution table
+      const clusterTable = document.getElementById('cluster-table').getElementsByTagName('tbody')[0];
+      clusterTable.innerHTML = '';
+      
+      const clusterDistribution = results.cluster_distribution;
+      for (const [label, data] of Object.entries(clusterDistribution)) {
+        const row = clusterTable.insertRow();
+        row.insertCell(0).textContent = label;
+        row.insertCell(1).textContent = data.count;
+        row.insertCell(2).textContent = (data.percentage * 100).toFixed(2) + '%';
+      }
+      
+      // Update visualizations
+      const visualizations = results.visualizations;
+      document.getElementById('cluster-viz').src = 'data:image/png;base64,' + visualizations.cluster_viz;
+      document.getElementById('similarity-matrix').src = 'data:image/png;base64,' + visualizations.similarity_matrix;
+      document.getElementById('cluster-sizes').src = 'data:image/png;base64,' + visualizations.cluster_sizes;
+
+      // Update BERTopic results if available
+      const bertopicResults = document.getElementById('bertopic-results');
+      const topicSummaries = document.getElementById('topic-summaries');
+      
+      if (results.bertopic_results && results.bertopic_results.topic_summaries) {
+        bertopicResults.style.display = 'block';
+        topicSummaries.innerHTML = '';
+        
+        // Display topic summaries
+        const topicSummariesData = results.bertopic_results.topic_summaries;
+        for (const [clusterId, summary] of Object.entries(topicSummariesData)) {
+          const topicCard = document.createElement('div');
+          topicCard.className = 'topic-card';
+          topicCard.innerHTML = `
+            <h4>Cluster ${clusterId}</h4>
+            <p>${summary[0]}</p>
+          `;
+          topicSummaries.appendChild(topicCard);
+        }
+      } else {
+        bertopicResults.style.display = 'none';
+      }
+    }
+    
+    // Add class description field
+    function addClassDescription() {
+      const container = document.getElementById('class-descriptions');
+      const input = document.createElement('div');
+      input.className = 'form-group class-label-group';
+      input.innerHTML = `
+        <input type="text" class="form-input class-name" placeholder="Enter class name" required>
+        <textarea class="form-input class-description" placeholder="Enter class description (used for Wikipedia extraction, optional)" rows="3"></textarea>
+        <input type="file" class="form-input class-file" accept=".csv,.json">
+        <small class="form-help">You may provide either a description (for Wikipedia extraction) or upload a CSV/JSON file as a domain-specific corpus for this label. If both are provided, the uploaded file will be used for labeling.</small>
+      `;
+      container.appendChild(input);
+    }
+
+    // Log errors for debugging
+    function logError(error, step) {
+      console.error(`Error during ${step}:`, error);
+      const errorMessage = document.getElementById('error-message');
+      errorMessage.textContent = error.message || `An error occurred during ${step}. Please try again.`;
+      errorMessage.style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    // Handle file upload
+    document.getElementById('upload-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const loading = document.getElementById('loading');
+      const errorMessage = document.getElementById('error-message');
+      const uploadMessage = document.getElementById('upload-message');
+      const loadingMessage = document.getElementById('loading-message');
+      
+      loading.style.display = 'block';
+      loadingMessage.textContent = 'Uploading file...';
+      errorMessage.style.display = 'none';
+      uploadMessage.style.display = 'none';
+
+      try {
+        const response = await fetch(this.action, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        loading.style.display = 'none';
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        uploadMessage.textContent = 'File uploaded successfully!';
+        uploadMessage.style.display = 'block';
+        
+        // Progress to parameters step
+        setTimeout(() => {
+          showParametersCard();
+        }, 1000);
+      } catch (error) {
+        logError(error, 'file upload');
+      }
+    });
+
+    // Handle parameters submission and analysis
+    document.getElementById('parameters-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const loading = document.getElementById('loading');
+      const errorMessage = document.getElementById('error-message');
+      const loadingMessage = document.getElementById('loading-message');
+
+      // Prepare FormData for parameters and files
+      const formData = new FormData();
+      formData.append('embedding_type', document.getElementById('embedding_type').value);
+      formData.append('clustering_method', document.getElementById('clustering_method').value);
+      formData.append('num_clusters', parseInt(document.getElementById('num_clusters').value));
+      formData.append('min_wiki_pages', parseInt(document.getElementById('min_wiki_pages').value));
+      formData.append('use_bertopic', document.getElementById('use_bertopic').checked);
+
+      // Process class descriptions and files
+      const classLabelGroups = document.querySelectorAll('.class-label-group');
+      let hasAtLeastOne = false;
+      for (let i = 0; i < classLabelGroups.length; i++) {
+        const name = classLabelGroups[i].querySelector('.class-name').value.trim();
+        const description = classLabelGroups[i].querySelector('.class-description').value.trim();
+        const fileInput = classLabelGroups[i].querySelector('.class-file');
+        const file = fileInput && fileInput.files.length > 0 ? fileInput.files[0] : null;
+        if (name) {
+          hasAtLeastOne = true;
+          formData.append(`labels[${i}][name]`, name);
+          formData.append(`labels[${i}][description]`, description);
+          if (file) {
+            formData.append(`labels[${i}][file]`, file);
+          }
+        }
+      }
+      if (!hasAtLeastOne) {
+        errorMessage.textContent = 'Please add at least one class label';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      loading.style.display = 'block';
+      loadingMessage.textContent = 'Setting parameters...';
+      errorMessage.style.display = 'none';
+
+      try {
+        // Step 1: Set parameters (multipart/form-data)
+        const paramResponse = await fetch("{{ url_for('set_parameters') }}", {
+          method: 'POST',
+          body: formData
+        });
+        if (!paramResponse.ok) {
+          throw new Error(`HTTP error! status: ${paramResponse.status}`);
+        }
+        const paramData = await paramResponse.json();
+        if (paramData.error) {
+          throw new Error(paramData.error);
+        }
+        loadingMessage.textContent = 'Starting analysis...';
+        // Step 2: Run analysis
+        const analysisResponse = await fetch("{{ url_for('run_analysis') }}", {
+          method: 'POST'
+        });
+        if (!analysisResponse.ok) {
+          throw new Error(`HTTP error! status: ${analysisResponse.status}`);
+        }
+        const analysisData = await analysisResponse.json();
+        loading.style.display = 'none';
+        if (analysisData.error) {
+          throw new Error(analysisData.error);
+        }
+        showStatusCard();
+      } catch (error) {
+        logError(error, 'analysis');
+      }
+    });
+  </script>
+</body>
+</html>
