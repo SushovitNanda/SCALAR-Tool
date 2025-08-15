@@ -7,9 +7,21 @@ SCALAR is a tool for analyzing and clustering software requirements, helping res
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
+
+### Windows
 - Python 3.8 or higher
 - pip (Python package manager)
 - Active internet connection for Wikipedia data extraction
+
+### Linux
+- Python 3.8 or higher (`python3`)
+- pip3 (Python package manager)
+- Active internet connection for Wikipedia data extraction
+
+**Installing Python on Linux:**
+- **Ubuntu/Debian:** `sudo apt update && sudo apt install python3 python3-pip`
+- **CentOS/RHEL:** `sudo yum install python3 python3-pip`
+- **Fedora:** `sudo dnf install python3 python3-pip`
 
 ## Project Structure
 
@@ -44,17 +56,31 @@ cd sclara
 ```
 
 ### Install Dependencies
-```bash
+
+#### Windows
+```cmd
 pip install -r requirements.txt
+```
+
+#### Linux
+```bash
+# Option 1: Using the setup script (recommended)
+chmod +x setup_linux.sh
+./setup_linux.sh
+
+# Option 2: Manual installation
+python3 -m pip install -r requirements.txt
 ```
 
 ## Running the Application
 
 ### Method 1: Web Interface (Recommended)
+
+#### Windows
 You can start the application in two ways:
 
 1. **Using Launch_app.bat (Automatic)**:
-  Double-click the Launch_app.bat application to execute.
+  Double-click the `Launch_app.bat` file to execute.
 
    This will:
    - Check system requirements
@@ -64,7 +90,7 @@ You can start the application in two ways:
    - Handle cleanup on exit
 
 2. **Using app.py (Manual)**:
-   ```bash
+   ```cmd
    python app.py
    ```
    Then manually open your browser and navigate to:
@@ -72,11 +98,61 @@ You can start the application in two ways:
    http://localhost:5000
    ```
 
+#### Linux
+You can start the application in several ways:
+
+1. **Using setup_linux.sh (First-time setup)**:
+   ```bash
+   chmod +x setup_linux.sh
+   ./setup_linux.sh
+   ```
+   This will:
+   - Check system requirements
+   - Install dependencies
+   - Make scripts executable
+   - Optionally create a desktop shortcut
+   - Provide instructions for running the application
+
+2. **Using launch_app.sh (Automatic)**:
+   ```bash
+   chmod +x launch_app.sh
+   ./launch_app.sh
+   ```
+   This will:
+   - Check system requirements
+   - Install dependencies if needed
+   - Start the Flask server
+   - Open your default web browser automatically
+   - Handle cleanup on exit
+
+3. **Using app.py (Manual)**:
+   ```bash
+   python3 app.py
+   ```
+   Then manually open your browser and navigate to:
+   ```
+   http://localhost:5000
+   ```
+
+4. **Using launch_app.py (Cross-platform)**:
+   ```bash
+   python3 launch_app.py
+   ```
+   This works on both Windows and Linux systems.
+
 ### Method 2: Command Line Interface
 For batch processing or script-based usage:
-```bash
+
+**Windows:**
+```cmd
 python main.py
 ```
+
+**Linux:**
+```bash
+python3 main.py
+```
+
 This will prompt you for:
 - Input file path
 - Embedding type
@@ -113,9 +189,16 @@ This will prompt you for:
   - Matplotlib for visualizations
 - HTML/CSS for the user interface
 
+## Additional Documentation
+
+- **[Linux Installation Guide](INSTALL_LINUX.md)** - Detailed instructions for Linux users
+- **[Project Structure](modules/README.md)** - Information about the modules and their functionality
+
 ## Troubleshooting
 
 ### Common Issues
+
+#### Windows
 1. **Server Connection Issues**:
    - Ensure no other application is using port 5000
    - Check your firewall settings
@@ -136,9 +219,56 @@ This will prompt you for:
    - Verify internet connection for Wikipedia API
    - Ensure sufficient system memory
 
+#### Linux
+1. **Permission Issues**:
+   - Make scripts executable: `chmod +x *.sh`
+   - Ensure you have write permissions in the directory
+   - Run setup script as regular user (not root)
+
+2. **Python Command Issues**:
+   - Use `python3` instead of `python` if both are installed
+   - Ensure Python 3.8+ is installed: `python3 --version`
+   - Install pip if missing: `sudo apt install python3-pip`
+
+3. **Dependency Problems**:
+   - Run `python3 -m pip install -r requirements.txt`
+   - Use virtual environment: `python3 -m venv venv && source venv/bin/activate`
+   - Clear pip cache: `python3 -m pip cache purge`
+
+4. **Browser Issues**:
+   - Some Linux distributions may not have a default browser
+   - Manually open: `http://localhost:5000`
+   - Install a browser if needed: `sudo apt install firefox`
+
 ### Getting Help
 - Check the terminal output where the Flask server is running
 - Review the application logs in the terminal
 - Ensure all Python dependencies are installed correctly
 - Verify you're using compatible versions of Python (3.8+)
 - Make sure you have an active internet connection for Wikipedia data extraction
+
+### Quick Start Commands
+
+#### Windows
+```cmd
+# Clone and setup
+git clone https://github.com/SushovitNanda/sclara.git
+cd sclara
+pip install -r requirements.txt
+
+# Run application
+Launch_app.bat
+```
+
+#### Linux
+```bash
+# Clone and setup
+git clone https://github.com/SushovitNanda/sclara.git
+cd sclara
+chmod +x setup_linux.sh
+./setup_linux.sh
+
+# Run application
+./launch_app.sh
+```
+

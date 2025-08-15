@@ -16,6 +16,17 @@ export interface AnalysisParameters {
 }
 
 export interface AnalysisResults {
+  parameters: AnalysisParameters;
+  raw_embeddings: {
+    document_embeddings: number[][];
+    label_embeddings: number[][];
+    embedding_dimension: number;
+  };
+  domain_corpus: Record<string, {
+    source: 'user_uploaded' | 'wikipedia_extracted';
+    search_terms?: string;
+    text: string;
+  }>;
   cluster_distribution: Record<string, { count: number; percentage: number }>;
   visualizations: {
     cluster_viz?: string;
@@ -25,6 +36,7 @@ export interface AnalysisResults {
   bertopic_results?: {
     topic_reports: Array<{
       cluster_id: number;
+      cluster_label: string;
       topic_id: number;
       top_terms: string;
       term_scores: Record<string, number>;

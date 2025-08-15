@@ -232,16 +232,20 @@ def run_analysis_task():
         use_bertopic = params.get('use_bertopic', True)
         class_descriptions = session_data.get('class_descriptions', {})
         class_corpora = session_data.get('class_corpora', {})
+        
         # Load data
         file_path = session_data['uploaded_file']
         df = pd.read_csv(file_path, dtype=str).fillna("")
         texts = df.apply(lambda row: ' '.join(row.astype(str)), axis=1).tolist()
         preprocessor = TextPreprocessor()
         processed_texts = [preprocessor.preprocess_text(text) for text in texts]
+        
         # Prepare label corpora: use uploaded corpus if present, else Wikipedia extraction, else default
         label_corpus_texts = []
         label_names = []
         wiki_needed = {}
+        domain_corpus_data = {}  # Store domain corpus information
+        
         for label in range(num_clusters):
             # Try to get label name from class_corpora or class_descriptions
             if class_corpora:
@@ -250,6 +254,10 @@ def run_analysis_task():
                     label_name = list(class_corpora.keys())[label]
                     label_names.append(label_name)
                     label_corpus_texts.append(class_corpora[label_name])
+                    domain_corpus_data[label_name] = {
+                        'source': 'user_uploaded',
+                        'text': class_corpora[label_name]
+                    }
                     continue
             if class_descriptions:
                 if label < len(class_descriptions):
@@ -261,6 +269,7 @@ def run_analysis_task():
             label_name = f"Class {label+1}"
             label_names.append(label_name)
             wiki_needed[label_name] = ''
+        
         # If any labels need Wikipedia extraction, do it
         wiki_embeddings = {}
         if wiki_needed:
@@ -269,13 +278,26 @@ def run_analysis_task():
             wiki_corpus = wiki_extractor.extract_corpus()
             for label, text in wiki_corpus.items():
                 label_corpus_texts.append(text)
+                domain_corpus_data[label] = {
+                    'source': 'wikipedia_extracted',
+                    'search_terms': wiki_needed[label],
+                    'text': text
+                }
+        
         # Generate embeddings for label corpora
         embedding_gen = EmbeddingGenerator(embedding_type)
         label_embeddings = embedding_gen.generate_embeddings(label_corpus_texts)
+        
         # Generate embeddings for documents
         document_embeddings = embedding_gen.generate_embeddings(processed_texts)
+        
+        # Convert embeddings to lists for JSON serialization
+        document_embeddings_list = [emb.tolist() for emb in document_embeddings]
+        label_embeddings_list = [emb.tolist() for emb in label_embeddings]
+        
         # Map label names to embeddings
         label_to_embedding = {label_names[i]: label_embeddings[i] for i in range(len(label_names))}
+        
         # Perform clustering
         predicted_labels, cluster_labels, similarity_matrix = cluster_and_assign_labels(
             document_embeddings,
@@ -358,9 +380,8 @@ def run_analysis_task():
             cluster_topics = bertopic_interpreter.fit_transform_with_clusters(texts, cluster_labels)
             logger.info("BERTopic analysis complete")
             
-            # Generate topic reports and visualizations
+            # Generate topic reports
             topic_reports = []
-            topic_visualizations = {}
             
             for cluster_id in sorted(set(cluster_labels)):
                 logger.info(f"Generating visualizations for cluster {cluster_id}...")
@@ -392,38 +413,44 @@ def run_analysis_task():
                     
                     bertopic_results = {
                         'topic_reports': topic_reports,
-                        'topic_summaries': topic_summaries,
-                        'topic_visualizations': topic_visualizations
+                        'topic_summaries': topic_summaries
                     }
                 else:
                     logger.warning(f"No topics available for cluster {cluster_id}")
-            
-            # Save results to dataframe
-            df['predicted_label'] = predicted_labels
-            df['cluster_id'] = cluster_labels
-            
-            # Store results
-            results_file = os.path.join(app.config['UPLOAD_FOLDER'], 'results.csv')
-            df.to_csv(results_file, index=False)
-            
-            # Prepare analysis summary
-            cluster_counts = Counter(predicted_labels)
-            cluster_distribution = {str(label): {'count': count, 'percentage': count/len(predicted_labels)} 
-                                   for label, count in cluster_counts.most_common()}
-            
-            # Store results in session
-            session_data['results'] = {
-                'file_path': results_file,
-                'cluster_distribution': cluster_distribution,
-                'visualizations': visualizations,
-                'bertopic_results': bertopic_results,
-                'status': 'complete'
-            }
-            
-            # Save session after analysis is complete
-            save_session()
-            
-            logger.info("Analysis completed successfully")
+        
+        # Save results to dataframe
+        df['predicted_label'] = predicted_labels
+        df['cluster_id'] = cluster_labels
+        
+        # Store results
+        results_file = os.path.join(app.config['UPLOAD_FOLDER'], 'results.csv')
+        df.to_csv(results_file, index=False)
+        
+        # Prepare analysis summary
+        cluster_counts = Counter(predicted_labels)
+        cluster_distribution = {str(label): {'count': count, 'percentage': count/len(predicted_labels)} 
+                               for label, count in cluster_counts.most_common()}
+        
+        # Store results in session with new structure
+        session_data['results'] = {
+            'file_path': results_file,
+            'parameters': params,
+            'raw_embeddings': {
+                'document_embeddings': document_embeddings_list,
+                'label_embeddings': label_embeddings_list,
+                'embedding_dimension': len(document_embeddings_list[0]) if document_embeddings_list else 0
+            },
+            'domain_corpus': domain_corpus_data,
+            'cluster_distribution': cluster_distribution,
+            'visualizations': visualizations,
+            'bertopic_results': bertopic_results,
+            'status': 'complete'
+        }
+        
+        # Save session after analysis is complete
+        save_session()
+        
+        logger.info("Analysis completed successfully")
     except Exception as e:
         logger.error(f"Analysis background task failed: {str(e)}")
         import traceback
