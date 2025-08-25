@@ -191,6 +191,7 @@ This will prompt you for:
 
 - **[Linux Installation Guide](INSTALL_LINUX.md)** - Detailed instructions for Linux users
 - **[Project Structure](modules/README.md)** - Information about the modules and their functionality
+- **[License](LICENSE)**
 
 ## Troubleshooting
 
