@@ -20,8 +20,7 @@ Before you begin, ensure you have the following installed:
 
 **Installing Python on Linux:**
 - **Ubuntu/Debian:** `sudo apt update && sudo apt install python3 python3-pip`
-- **CentOS/RHEL:** `sudo yum install python3 python3-pip`
-
+  
 ## Project Structure
 
 The project consists of several key Python files:
