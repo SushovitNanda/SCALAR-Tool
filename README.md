@@ -21,7 +21,6 @@ Before you begin, ensure you have the following installed:
 **Installing Python on Linux:**
 - **Ubuntu/Debian:** `sudo apt update && sudo apt install python3 python3-pip`
 - **CentOS/RHEL:** `sudo yum install python3 python3-pip`
-- **Fedora:** `sudo dnf install python3 python3-pip`
 
 ## Project Structure
 
@@ -84,7 +83,7 @@ You can start the application in two ways:
 
    This will:
    - Check system requirements
-   - Install dependencies if needed
+   - Check for dependencies
    - Start the Flask server
    - Open your default web browser automatically
    - Handle cleanup on exit
@@ -108,7 +107,7 @@ You can start the application in several ways:
    ```
    This will:
    - Check system requirements
-   - Install dependencies
+   - Check for dependencies
    - Make scripts executable
    - Optionally create a desktop shortcut
    - Provide instructions for running the application
@@ -120,7 +119,7 @@ You can start the application in several ways:
    ```
    This will:
    - Check system requirements
-   - Install dependencies if needed
+   - Check for dependencies 
    - Start the Flask server
    - Open your default web browser automatically
    - Handle cleanup on exit
