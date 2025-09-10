@@ -176,6 +176,46 @@ This will prompt you for:
 - Session persistence
 - Error handling and logging
 
+## Extending the Tool: Adding More Embedding and Clustering Mechanisms
+
+SCALAR is designed to be easily extensible, allowing users to add new embedding models and clustering algorithms. The tool already includes support for multiple methods, and adding new ones is straightforward.
+
+### Current Supported Methods
+
+#### Embedding Models
+- **Sentence BERT**: Uses `sentence-transformers/all-MiniLM-L6-v2` (default)
+- **Sentence RoBERTa**: Uses `sentence-transformers/all-distilroberta-v1`
+
+#### Clustering Algorithms
+- **K-Means**: Traditional centroid-based clustering
+- **GMM (Gaussian Mixture Model)**: Probabilistic clustering
+- **HAC (Hierarchical Agglomerative Clustering)**: Bottom-up hierarchical clustering (commented out)
+- **BIRCH**: Memory-efficient hierarchical clustering (commented out)
+
+### Quick Start for Extensions
+
+**HAC and BIRCH clustering methods are already included in the module but arent implemented in the tool** and can be easily enabled or disabled by commenting/uncommenting lines in the frontend components. To modify which clustering options are available:
+
+1. Open `src/components/ParameterForm.tsx`
+2. Comment out any clustering methods you want to disable:
+   ```typescript
+   {/* <SelectItem value="hac">Hierarchical Clustering</SelectItem> */}
+   {/* <SelectItem value="birch">BIRCH</SelectItem> */}
+   ```
+3. Uncomment to re-enable them
+
+### Detailed Extension Guide
+
+For comprehensive instructions on adding new embedding models and clustering algorithms, including:
+- Step-by-step implementation guides
+- Code examples for both frontend and backend modifications
+- Best practices for maintaining code quality
+- Complete examples (e.g., adding DBSCAN clustering)
+
+**See the detailed documentation in [modules/README.md](modules/README.md)**
+
+This extensible design allows researchers and developers to easily experiment with different embedding and clustering approaches for their specific use cases.
+
 ## Technologies Used
 - Python
   - Flask for web server
@@ -190,7 +230,7 @@ This will prompt you for:
 ## Additional Documentation
 
 - **[Linux Installation Guide](INSTALL_LINUX.md)** - Detailed instructions for Linux users
-- **[Project Structure](modules/README.md)** - Information about the modules and their functionality
+- **[Software Structure](modules/README.md)** - Information about the modules and their functionality
 - **[License](LICENSE)**
 
 ## Troubleshooting
