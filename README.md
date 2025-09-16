@@ -49,8 +49,8 @@ The project consists of several key Python files:
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/SushovitNanda/sclara.git
-cd sclara
+git clone https://github.com/SushovitNanda/scalar.git
+cd scalar
 ```
 
 ### Install Dependencies
@@ -291,8 +291,8 @@ This extensible design allows researchers and developers to easily experiment wi
 #### Windows
 ```cmd
 # Clone and setup
-git clone https://github.com/SushovitNanda/sclara.git
-cd sclara
+git clone https://github.com/SushovitNanda/scalar.git
+cd scalar
 pip install -r requirements.txt
 
 # Run application
@@ -302,8 +302,8 @@ Launch_app.bat
 #### Linux
 ```bash
 # Clone and setup
-git clone https://github.com/SushovitNanda/sclara.git
-cd sclara
+git clone https://github.com/SushovitNanda/scalar.git
+cd scalar
 chmod +x setup_linux.sh
 ./setup_linux.sh
 

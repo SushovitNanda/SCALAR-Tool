@@ -34,8 +34,8 @@ Ensure Python version is 3.8 or higher.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/SushovitNanda/sclara.git
-   cd sclara
+   git clone https://github.com/SushovitNanda/scalar.git
+   cd scalar
    ```
 
 2. Create a virtual environment (recommended):
@@ -159,7 +159,7 @@ To remove SCALAR:
 
 ```bash
 # Remove the application directory
-rm -rf /path/to/sclara
+rm -rf /path/to/scalar
 
 # Remove virtual environment (if used)
 rm -rf venv
