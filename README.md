@@ -161,7 +161,7 @@ This will prompt you for:
 
 ## How to Use the Tool
 
-1. **Upload Data**: Start by uploading your CSV file containing research topics.
+1. **Upload Data**: Start by uploading your CSV file containing research topics (single column CSV file).
 2. **Configure Parameters**: Set embedding type, clustering method, and class definitions.
 3. **Run Analysis**: Begin the analysis process and wait for the results.
 4. **Explore Results**: View visualizations and download the analysis results.
